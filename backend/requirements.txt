@@ -1,0 +1,14 @@
+# Python Backend - PDF Catalog Generator API
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.12
+reportlab==4.2.5
+Pillow==11.0.0
+requests==2.32.3
+google-auth==2.36.0
+google-auth-oauthlib==1.2.1
+google-auth-httplib2==0.2.0
+google-api-python-client==2.154.0
+python-dotenv==1.0.1
+pydantic==2.10.3
+pydantic-settings==2.6.1

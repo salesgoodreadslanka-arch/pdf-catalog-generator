@@ -1,0 +1,26 @@
+# Common
+.env
+.env.local
+node_modules/
+dist/
+build/
+.next/
+out/
+.DS_Store
+*.log
+node_bin/
+
+# Backend
+backend/.env
+backend/credentials.json
+backend/output/
+backend/__pycache__/
+backend/*.pdf
+
+# Frontend
+frontend/.env
+frontend/.env.local
+frontend/.next/
+frontend/node_modules/
+frontend/out/
+frontend/build/
