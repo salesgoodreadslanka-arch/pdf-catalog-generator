@@ -103,77 +103,81 @@ async def generate_catalog(request: CatalogRequest, background_tasks: Background
             if cancellation_tokens.get(task_id, False):
                 return True
             return False
-        
-        # Get sheet data
-        data = await sheets_service.get_sheet_data()
-        
-        # Filter data based on request type
+            
+        # Prepare filename based on request type
         if request.catalog_type == CatalogType.CATEGORY:
-            if not request.selected_items:
-                raise HTTPException(status_code=400, detail="No categories selected")
-            filtered_data = sheets_service.filter_by_categories(data, request.selected_items)
             filename = f"catalog_categories_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-            
         elif request.catalog_type == CatalogType.AUTHOR:
-            if not request.selected_items:
-                raise HTTPException(status_code=400, detail="No authors selected")
-            filtered_data = sheets_service.filter_by_authors(data, request.selected_items)
             filename = f"catalog_authors_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-            
-        else:  # FULL
-            filtered_data = data
+        else:
             filename = f"catalog_full_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        
-        # Generate PDF with progress callback
-        def progress_callback(progress: int, message: str):
-            print(f"[{task_id}] {progress}%: {message}")  # Console log for visibility
-            progress_store[task_id] = {
-                "progress": progress,
-                "status": "generating",
-                "message": message
-            }
-        
-        output_path = os.path.join("output", filename)
-        os.makedirs("output", exist_ok=True)
-        
-        # Generate PDF
-        await pdf_service.generate_catalog(
-            filtered_data,
-            output_path,
-            catalog_type=request.catalog_type.value,
-            selected_items=request.selected_items,
-            progress_callback=progress_callback,
-            check_cancel=check_cancel
-        )
-        
-        # Update progress to complete
-        progress_store[task_id] = {
-            "progress": 100,
-            "status": "complete",
-            "message": "Catalog generated successfully",
-            "file_path": output_path
-        }
+
+        async def run_generation():
+            try:
+                # Get sheet data
+                data = await sheets_service.get_sheet_data()
+                
+                # Filter data based on request type
+                if request.catalog_type == CatalogType.CATEGORY:
+                    if not request.selected_items:
+                        raise Exception("No categories selected")
+                    filtered_data = sheets_service.filter_by_categories(data, request.selected_items)
+                elif request.catalog_type == CatalogType.AUTHOR:
+                    if not request.selected_items:
+                        raise Exception("No authors selected")
+                    filtered_data = sheets_service.filter_by_authors(data, request.selected_items)
+                else:  # FULL
+                    filtered_data = data
+                
+                # Generate PDF with progress callback
+                def progress_callback(progress: int, message: str):
+                    print(f"[{task_id}] {progress}%: {message}")  # Console log for visibility
+                    progress_store[task_id] = {
+                        "progress": progress,
+                        "status": "generating",
+                        "message": message
+                    }
+                
+                output_path = os.path.join("output", filename)
+                os.makedirs("output", exist_ok=True)
+                
+                # Generate PDF
+                await pdf_service.generate_catalog(
+                    filtered_data,
+                    output_path,
+                    catalog_type=request.catalog_type.value,
+                    selected_items=request.selected_items,
+                    progress_callback=progress_callback,
+                    check_cancel=check_cancel
+                )
+                
+                # Update progress to complete
+                progress_store[task_id] = {
+                    "progress": 100,
+                    "status": "complete",
+                    "message": "Catalog generated successfully",
+                    "file_path": output_path
+                }
+            except Exception as e:
+                print(f"[{task_id}] Error: {e}")
+                progress_store[task_id] = {
+                    "progress": 0,
+                    "status": "error",
+                    "message": str(e)
+                }
+
+        # Start generation in background
+        background_tasks.add_task(run_generation)
         
         return {
             "success": True,
             "task_id": task_id,
-            "filename": filename,
-            "download_url": f"/api/catalog/download/{filename}"
+            "filename": filename
         }
         
-    except CancelledTask:
-        print(f"[{task_id}] Process cancelled")
-        progress_store[task_id] = {
-            "progress": 0,
-            "status": "cancelled",
-            "message": "Task was cancelled by user"
-        }
-        # Cleanup partial file
-        if 'output_path' in locals() and os.path.exists(output_path):
-            try:
-                os.remove(output_path)
-            except:
-                pass
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+        
 
     except Exception as e:
         if task_id in progress_store:
@@ -186,7 +190,7 @@ async def generate_catalog(request: CatalogRequest, background_tasks: Background
     finally:
         # Cleanup token
         if task_id in cancellation_tokens:
-            del cancellation_tokens[task_id]
+            cancellation_tokens.pop(task_id, None)
 
 
 @app.post("/api/catalog/cancel/{task_id}")

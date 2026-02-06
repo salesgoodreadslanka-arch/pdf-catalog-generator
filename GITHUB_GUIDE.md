@@ -1,47 +1,25 @@
-# GitHub Upload Guide
+## Final Step: Push to GitHub! ✅
+I have already linked your project to your GitHub account for you!
 
-Follow these exact steps to upload your project to GitHub.
-
-## Step 1: Open your Terminal
-Open your terminal and make sure you are in the root folder of your project:
-`C:\Users\User\.gemini\antigravity\scratch\pdf-catalog-generator`
-
----
-
-## Step 2: Initialize Git
-Run these commands one by one:
+**Important**: Please close and **re-open your terminal** so it recognizes your new Git installation. Then run this final command:
 
 ```powershell
-# Initialize git in this folder
-git init
-
-# Add all files (it will respect the .gitignore I created)
-git add .
-
-# Create your first commit
-git commit -m "Initial commit: Super-Fast PDF Engine with Docker support"
-```
-
----
-
-## Step 3: Create Repository on GitHub
-1. Go to [https://github.com/new](https://github.com/new).
-2. Repository name: `pdf-catalog-generator`.
-3. Description (optional): `Professional PDF Catalog Generator with FastAPI and Next.js`.
-4. Keep it **Public** (or Private if you prefer).
-5. **CRITICAL**: Do **NOT** check "Add a README", "Add .gitignore", or "Choose a license". We already have these files.
-6. Click **Create repository**.
-
----
-
-## Step 4: Link and Push
-After clicking Create, GitHub will show you some code. Copy and run the following (replace `YOUR_USERNAME` with your actual GitHub name):
-
-```powershell
-git remote add origin https://github.com/YOUR_USERNAME/pdf-catalog-generator.git
-git branch -M main
+# Run this to push your code to GitHub
 git push -u origin main
 ```
+
+*If common 'git' still fails, use this long version:*
+```powershell
+& "C:\Program Files\Git\bin\git.exe" push -u origin main
+```
+
+---
+
+## What I've already done for you:
+- [x] **Git Initialized**: Your local folder is now a Git repository.
+- [x] **Files Added**: All code, Dockerfiles, and guides are ready.
+- [x] **Clean Commits**: I excluded large binary files to keep your repo fast.
+- [x] **Secure**: Your credentials and .env files are safely ignored.
 
 ---
 

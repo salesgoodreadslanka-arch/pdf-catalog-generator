@@ -4,6 +4,9 @@ import requests
 import tempfile
 import shutil
 import concurrent.futures
+import asyncio
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from typing import List, Dict, Callable, Optional
 from datetime import datetime
 from PIL import Image as PILImage
@@ -46,7 +49,29 @@ class PDFService:
         self.custom_styles = {}
         self.image_cache = {}  # URL -> Local Temp Path
         self.temp_dir = None
+        self.session = self._setup_session()
         self.setup_styles()
+    
+    def _setup_session(self) -> requests.Session:
+        """Setup a robust session with retries and pooling"""
+        session = requests.Session()
+        retry_strategy = Retry(
+            total=5,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["HEAD", "GET", "OPTIONS"]
+        )
+        adapter = HTTPAdapter(
+            pool_connections=20,
+            pool_maxsize=20,
+            max_retries=retry_strategy
+        )
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
+        })
+        return session
     
     def setup_styles(self):
         """Setup custom styles for the catalog"""
@@ -97,12 +122,12 @@ class PDFService:
         return CATEGORY_COLORS[hash_val % len(CATEGORY_COLORS)]
     
     def fetch_image_sync(self, url: str) -> Optional[str]:
-        """Fetch, resize (8x HiDPI), and save image to disk. Return path."""
+        """Fetch, resize (8x HiDPI), and save image to disk with session-based retries."""
         if not url or str(url).strip() == "": return None
         if url in self.image_cache: return self.image_cache[url]
         
         try:
-            response = requests.get(url, timeout=15)
+            response = self.session.get(url, timeout=(5, 15))
             if response.status_code == 200:
                 img_io = io.BytesIO(response.content)
                 with PILImage.open(img_io) as img:
@@ -118,7 +143,8 @@ class PDFService:
                     self.image_cache[url] = path
                     return path
         except Exception as e:
-            print(f"Fetch/Resize failed for {url[:30]}: {e}")
+            print(f"Fetch failed for {url[:50]}: {e}")
+            
         return None
 
     def get_placeholder_path(self) -> str:
@@ -163,15 +189,18 @@ class PDFService:
                         parts = [p.strip() for p in cat.split('>')]
                         if len(parts) >= 2:
                             m_cat, s_cat = parts[0], parts[1]
-                            key = f"{m_cat}|{s_cat}"
-                            main_categories.add(m_cat)
-                            if key not in products_by_category:
-                                products_by_category[key] = {'main_category': m_cat, 'sub_category': s_cat, 'products': []}
-                            products_by_category[key]['products'].append({
-                                'sku': str(row[0]).strip(), 'name': str(row[1]).strip(),
-                                'price': str(row[2]).strip(), 'img_url': str(row[3]).strip(),
-                                'author': str(row[4]).strip(), 'index': i
-                            })
+                    else:
+                        m_cat, s_cat = cat, ""
+                    
+                    key = f"{m_cat}|{s_cat}"
+                    main_categories.add(m_cat)
+                    if key not in products_by_category:
+                        products_by_category[key] = {'main_category': m_cat, 'sub_category': s_cat, 'products': []}
+                    products_by_category[key]['products'].append({
+                        'sku': str(row[0]).strip(), 'name': str(row[1]).strip(),
+                        'price': str(row[2]).strip(), 'img_url': str(row[3]).strip(),
+                        'author': str(row[4]).strip(), 'index': i
+                    })
             except: continue
         return products_by_category, main_categories
 
@@ -199,6 +228,7 @@ class PDFService:
                 futures = {executor.submit(self.fetch_image_sync, url): url for url in unique_urls}
                 done_count = 0
                 for f in concurrent.futures.as_completed(futures):
+                    await asyncio.sleep(0) # Yield to event loop
                     if check_cancel and check_cancel():
                         executor.shutdown(wait=False)
                         raise Exception("Generation cancelled")
@@ -207,24 +237,7 @@ class PDFService:
                         perc = 10 + int((done_count / max(1, len(unique_urls))) * 25) # 10-35%
                         if progress_callback: progress_callback(perc, f"Fetched {done_count}/{len(unique_urls)} images")
 
-            # 2. BUILD STORY
-            doc = SimpleDocTemplate(output_path, pagesize=letter, rightMargin=RIGHT_MARGIN,
-                                   leftMargin=LEFT_MARGIN, topMargin=TOP_MARGIN, bottomMargin=BOTTOM_MARGIN)
-            story = []
-            story.append(Paragraph("PRODUCT CATALOG", self.custom_styles['title']))
-            story.append(Spacer(1, 20))
-            
-            # Count for progress
-            total_items = sum(1 for row in data[1:] if len(row) > 1 and str(row[1]).strip())
-            cur_items = 0
-            
-            def update_progress(inc=1):
-                nonlocal cur_items
-                cur_items += inc
-                if progress_callback:
-                    p = 35 + int((cur_items / max(1, total_items)) * 60) # 35-95%
-                    progress_callback(p, f"Building pages ({cur_items}/{total_items})")
-
+            # 2. PREPARE DATA & COUNTS
             if catalog_type == 'author':
                 # Group by Author
                 author_map = {}
@@ -236,20 +249,43 @@ class PDFService:
                         'sku': str(row[0]).strip(), 'name': str(row[1]).strip(),
                         'price': str(row[2]).strip(), 'img_url': str(row[3]).strip(), 'author': auth
                     })
-                
-                sorted_auths = sorted(author_map.keys())
-                story.append(Paragraph(f"Authors ({len(sorted_auths)})", self.styles['Heading2']))
-                for a in sorted_auths:
+                sorted_keys = sorted(author_map.keys())
+                total_items = sum(len(items) for items in author_map.values())
+            else:
+                # Category path
+                cat_data, main_cats = self.analyze_categories(data, selected_items)
+                sorted_main = sorted(list(main_cats))
+                total_items = sum(len(info['products']) for info in cat_data.values())
+
+            # 3. BUILD STORY
+            doc = SimpleDocTemplate(output_path, pagesize=letter, rightMargin=RIGHT_MARGIN,
+                                   leftMargin=LEFT_MARGIN, topMargin=TOP_MARGIN, bottomMargin=BOTTOM_MARGIN)
+            story = []
+            story.append(Paragraph("PRODUCT CATALOG", self.custom_styles['title']))
+            story.append(Spacer(1, 20))
+            
+            cur_items = 0
+            def update_progress(inc=1):
+                nonlocal cur_items
+                cur_items += inc
+                if progress_callback:
+                    p = 35 + int((cur_items / max(1, total_items)) * 60) # 35-95%
+                    progress_callback(p, f"Building pages ({cur_items}/{total_items})")
+
+            if catalog_type == 'author':
+                story.append(Paragraph(f"Authors ({len(sorted_keys)})", self.styles['Heading2']))
+                for a in sorted_keys:
                     story.append(Paragraph(f"• {a} ({len(author_map[a])} items)", self.custom_styles['cover_list']))
                 story.append(PageBreak())
                 
-                for idx, auth in enumerate(sorted_auths):
+                for idx, auth in enumerate(sorted_keys):
                     if idx > 0: story.append(PageBreak())
                     
                     items = author_map[auth]
                     rows_data = []
                     cur_r = []
                     for item in items:
+                        await asyncio.sleep(0) # Yield
                         if check_cancel and check_cancel(): raise Exception("Cancelled")
                         cur_r.append(self._create_product_cell(item))
                         update_progress()
@@ -263,9 +299,6 @@ class PDFService:
                         # Use repeating header for Author
                         self._add_product_table(story, rows_data, header_text=auth.upper(), header_color="#2E4053")
             else:
-                # Category path
-                cat_data, main_cats = self.analyze_categories(data, selected_items)
-                sorted_main = sorted(list(main_cats))
                 story.append(Paragraph(f"Categories ({len(sorted_main)})", self.styles['Heading2']))
                 for c in sorted_main: story.append(Paragraph(f"• {c}", self.custom_styles['cover_list']))
                 story.append(PageBreak())
@@ -284,6 +317,7 @@ class PDFService:
                         rows_data = []
                         cur_r = []
                         for product in sub_info['products']:
+                            await asyncio.sleep(0) # Yield
                             if check_cancel and check_cancel(): raise Exception("Cancelled")
                             cur_r.append(self._create_product_cell(product))
                             update_progress()
@@ -295,7 +329,10 @@ class PDFService:
                         
                         if rows_data: 
                             color = self.get_color_for_category(m_cat)
-                            header_txt = f"{m_cat} > {sub_info['sub_category']}"
+                            if sub_info['sub_category']:
+                                header_txt = f"{m_cat} > {sub_info['sub_category']}"
+                            else:
+                                header_txt = m_cat
                             # Use repeating header for Category
                             self._add_product_table(story, rows_data, header_text=header_txt, header_color=color)
 
