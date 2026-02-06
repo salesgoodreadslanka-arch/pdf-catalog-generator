@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-    title: 'PDF Catalog Generator',
-    description: 'Generate professional PDF catalogs from Google Sheets data',
+    title: 'Goodreads.lk | Professional PDF Catalog Generator',
+    description: 'Generate high-quality, professional PDF catalogs for your products with Goodreads.lk',
 }
 
 export default function RootLayout({

@@ -140,11 +140,11 @@ export default function DownloadButton({
     }
 
     const getButtonColor = () => {
-        if (success) return 'bg-green-500 hover:bg-green-600'
-        if (error) return 'bg-red-500 hover:bg-red-600'
-        if (type === 'category') return 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600'
-        if (type === 'author') return 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
-        return 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600'
+        if (success) return 'bg-emerald-600 shadow-emerald-900/20'
+        if (error) return 'bg-brand-red shadow-red-900/20'
+        if (type === 'category') return 'bg-brand-blue shadow-blue-900/20 hover:bg-brand-blue/90'
+        if (type === 'author') return 'bg-brand-red shadow-red-900/20 hover:bg-brand-red/90'
+        return 'bg-brand-blue shadow-blue-900/20 hover:bg-brand-blue/90 w-full'
     }
 
     return (

@@ -32,135 +32,143 @@ export default function Home() {
     }
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-            {/* Animated background */}
-            <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse-slow"></div>
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse-slow animation-delay-2000"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse-slow animation-delay-4000"></div>
-            </div>
-
-            <div className="relative z-10 container mx-auto px-4 py-12">
-                {/* Header */}
-                <div className="text-center mb-16 animate-fade-in">
-                    <div className="flex items-center justify-center mb-4">
-                        <Sparkles className="w-12 h-12 text-yellow-400 mr-3 animate-pulse" />
-                        <h1 className="text-6xl font-bold text-white">
-                            PDF Catalog Generator
-                        </h1>
-                        <Sparkles className="w-12 h-12 text-yellow-400 ml-3 animate-pulse" />
+        <main className="min-h-screen bg-brand-gray-50 flex flex-col">
+            {/* Navigation / Header */}
+            <header className="glass sticky top-0 z-50 border-b border-brand-gray-200 py-4 shadow-sm">
+                <div className="container mx-auto px-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2 group cursor-default">
+                        <div className="bg-brand-red p-2 rounded-lg transform group-hover:rotate-12 transition-transform shadow-md">
+                            <BookOpen className="w-6 h-6 text-white" />
+                        </div>
+                        <span className="text-2xl font-bold tracking-tight">
+                            <span className="text-brand-blue">Goodreads</span>
+                            <span className="text-brand-red">.lk</span>
+                        </span>
                     </div>
-                    <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-                        Generate professional PDF catalogs from your Google Sheets data with real-time progress tracking
+                    <div className="hidden md:flex items-center gap-6 text-sm font-medium text-brand-blue/70">
+                        <span className="hover:text-brand-red transition-colors cursor-pointer">Documentation</span>
+                        <span className="hover:text-brand-red transition-colors cursor-pointer">Support</span>
+                    </div>
+                </div>
+            </header>
+
+            <div className="container mx-auto px-4 py-12 flex-grow">
+                {/* Hero Section */}
+                <div className="max-w-4xl mx-auto text-center mb-16 space-y-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-red/10 text-brand-red text-sm font-semibold tracking-wide uppercase">
+                        <Sparkles className="w-4 h-4" />
+                        <span>Professional Cataloging</span>
+                    </div>
+                    <h1 className="text-4xl md:text-6xl font-extrabold text-brand-blue leading-tight tracking-tight">
+                        Transform your data into <br />
+                        <span className="text-brand-red">Premium Catalogs</span>
+                    </h1>
+                    <p className="text-lg md:text-xl text-brand-blue/60 max-w-2xl mx-auto leading-relaxed">
+                        Effortlessly generate high-quality PDF catalogs from Google Sheets with real-time tracking and zero configuration.
                     </p>
                 </div>
 
                 {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="glass rounded-2xl p-8">
-                            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-500 mx-auto"></div>
-                            <p className="text-white mt-4 text-center">Loading data...</p>
+                    <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+                        <div className="brand-card p-12 text-center bg-white/50">
+                            <div className="w-16 h-16 border-4 border-brand-red border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+                            <h2 className="text-xl font-bold text-brand-blue">Synchronizing Data...</h2>
+                            <p className="text-brand-blue/50 mt-2">Connecting to Google Cloud Services</p>
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up">
-                        {/* Category-wise Download */}
-                        <div className="glass rounded-2xl p-8 hover:scale-105 transition-transform duration-300">
-                            <div className="flex items-center mb-6">
-                                <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-3 rounded-xl mr-4">
-                                    <BookOpen className="w-8 h-8 text-white" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white">Category-wise</h2>
-                                    <p className="text-gray-400 text-sm">Select categories to include</p>
-                                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {/* Category Selector Card */}
+                        <div className="brand-card group">
+                            <div className="bg-brand-blue p-6 text-white group-hover:bg-brand-blue/95 transition-colors">
+                                <Users className="w-8 h-8 mb-4 opacity-90" />
+                                <h3 className="text-2xl font-bold">Category Scope</h3>
+                                <p className="text-white/70 text-sm mt-1">Refine by product categories</p>
                             </div>
-
-                            <CategorySelector
-                                categories={categories}
-                                selectedCategories={selectedCategories}
-                                onSelectionChange={setSelectedCategories}
-                            />
-
-                            <div className="mt-6">
-                                <DownloadButton
-                                    type="category"
-                                    selectedItems={selectedCategories}
-                                    disabled={selectedCategories.length === 0}
-                                    label={`Download (${selectedCategories.length} selected)`}
+                            <div className="p-6">
+                                <CategorySelector
+                                    categories={categories}
+                                    selectedCategories={selectedCategories}
+                                    onSelectionChange={setSelectedCategories}
                                 />
+                                <div className="mt-8">
+                                    <DownloadButton
+                                        type="category"
+                                        selectedItems={selectedCategories}
+                                        disabled={selectedCategories.length === 0}
+                                        label={`Download Selected (${selectedCategories.length})`}
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        {/* Author-wise Download */}
-                        <div className="glass rounded-2xl p-8 hover:scale-105 transition-transform duration-300">
-                            <div className="flex items-center mb-6">
-                                <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-xl mr-4">
-                                    <Users className="w-8 h-8 text-white" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white">Author-wise</h2>
-                                    <p className="text-gray-400 text-sm">Select authors to include</p>
-                                </div>
+                        {/* Author Selector Card */}
+                        <div className="brand-card group">
+                            <div className="bg-brand-red p-6 text-white group-hover:bg-brand-red/95 transition-colors">
+                                <Users className="w-8 h-8 mb-4 opacity-90" />
+                                <h3 className="text-2xl font-bold">Author Selection</h3>
+                                <p className="text-white/70 text-sm mt-1">Generate filtered by creators</p>
                             </div>
-
-                            <AuthorSelector
-                                authors={authors}
-                                selectedAuthors={selectedAuthors}
-                                onSelectionChange={setSelectedAuthors}
-                            />
-
-                            <div className="mt-6">
-                                <DownloadButton
-                                    type="author"
-                                    selectedItems={selectedAuthors}
-                                    disabled={selectedAuthors.length === 0}
-                                    label={`Download (${selectedAuthors.length} selected)`}
+                            <div className="p-6">
+                                <AuthorSelector
+                                    authors={authors}
+                                    selectedAuthors={selectedAuthors}
+                                    onSelectionChange={setSelectedAuthors}
                                 />
+                                <div className="mt-8">
+                                    <DownloadButton
+                                        type="author"
+                                        selectedItems={selectedAuthors}
+                                        disabled={selectedAuthors.length === 0}
+                                        label={`Download Selected (${selectedAuthors.length})`}
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        {/* Full Catalog Download */}
-                        <div className="glass rounded-2xl p-8 hover:scale-105 transition-transform duration-300">
-                            <div className="flex items-center mb-6">
-                                <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-3 rounded-xl mr-4">
-                                    <Download className="w-8 h-8 text-white" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white">Full Catalog</h2>
-                                    <p className="text-gray-400 text-sm">Download complete catalog</p>
-                                </div>
+                        {/* Utility / Full Catalog Card */}
+                        <div className="brand-card lg:col-span-1 md:col-span-2 group">
+                            <div className="bg-brand-gray-100 p-6 text-brand-blue group-hover:bg-brand-gray-200 transition-colors">
+                                <Download className="w-8 h-8 mb-4 text-brand-red" />
+                                <h3 className="text-2xl font-bold">Standard Catalog</h3>
+                                <p className="text-brand-blue/60 text-sm mt-1">Full inventory generation</p>
                             </div>
-
-                            <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl p-6 mb-6 border border-green-500/20">
-                                <p className="text-white text-center mb-2">
-                                    <span className="text-4xl font-bold text-gradient-blue">
+                            <div className="p-6 space-y-8">
+                                <div className="bg-brand-gray-50 rounded-2xl p-6 border border-brand-gray-200 flex flex-col items-center justify-center min-h-[160px]">
+                                    <span className="text-5xl font-black text-brand-blue mb-1">
                                         {categories.reduce((sum, cat) => sum + cat.count, 0)}
                                     </span>
-                                </p>
-                                <p className="text-gray-300 text-center text-sm">Total Products</p>
-                                <p className="text-gray-400 text-center text-xs mt-2">
-                                    {categories.length} Categories • {authors.length} Authors
-                                </p>
-                            </div>
-
-                            <div className="mt-6">
+                                    <span className="text-brand-blue/50 text-sm font-bold uppercase tracking-widest">Total Products</span>
+                                    <div className="mt-4 flex gap-3 text-[10px] font-bold text-brand-blue/40 uppercase tracking-tighter">
+                                        <span>{categories.length} Categories</span>
+                                        <span>•</span>
+                                        <span>{authors.length} Authors</span>
+                                    </div>
+                                </div>
                                 <DownloadButton
                                     type="full"
                                     selectedItems={[]}
                                     disabled={false}
-                                    label="Download Full Catalog"
+                                    label="Generate Full Catalog"
                                 />
                             </div>
                         </div>
                     </div>
                 )}
-
-                {/* Footer */}
-                <div className="text-center mt-16 text-gray-400 text-sm animate-fade-in">
-                    <p>Powered by FastAPI + Next.js • Real-time Progress Tracking</p>
-                </div>
             </div>
+
+            {/* Premium Footer */}
+            <footer className="border-t border-brand-gray-200 bg-white py-12 mt-20">
+                <div className="container mx-auto px-4 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-6 opacity-40 grayscale hover:grayscale-0 transition-all cursor-default">
+                        <BookOpen className="w-5 h-5" />
+                        <span className="font-bold text-lg">Goodreads.lk</span>
+                    </div>
+                    <p className="text-brand-blue/40 text-sm font-medium">
+                        &copy; 2026 Goodreads.lk Professional Services. Built for performance and reliability.
+                    </p>
+                </div>
+            </footer>
         </main>
     )
 }

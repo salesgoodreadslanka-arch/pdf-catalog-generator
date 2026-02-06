@@ -8,29 +8,42 @@ module.exports = {
     theme: {
         extend: {
             colors: {
+                brand: {
+                    red: '#C41E3A',    /* Vibrant Crimson */
+                    blue: '#1A3A5F',   /* Deep Navy Blue */
+                    white: '#FFFFFF',
+                    gray: {
+                        50: '#F9FAFB',
+                        100: '#F3F4F6',
+                        200: '#E5E7EB',
+                        300: '#D1D5DB',
+                        400: '#9CA3AF',
+                        500: '#6B7280',
+                    }
+                },
                 primary: {
+                    50: '#fff1f2',
+                    100: '#ffe4e6',
+                    200: '#fecdd3',
+                    300: '#fda4af',
+                    400: '#fb7185',
+                    500: '#f43f5e',   /* Secondary Red */
+                    600: '#e11d48',
+                    700: '#be123c',
+                    800: '#9f1239',
+                    900: '#881337',
+                },
+                secondary: {
                     50: '#f0f9ff',
                     100: '#e0f2fe',
                     200: '#bae6fd',
                     300: '#7dd3fc',
                     400: '#38bdf8',
-                    500: '#0ea5e9',
+                    500: '#0ea5e9',   /* Secondary Blue */
                     600: '#0284c7',
                     700: '#0369a1',
                     800: '#075985',
                     900: '#0c4a6e',
-                },
-                accent: {
-                    50: '#fdf4ff',
-                    100: '#fae8ff',
-                    200: '#f5d0fe',
-                    300: '#f0abfc',
-                    400: '#e879f9',
-                    500: '#d946ef',
-                    600: '#c026d3',
-                    700: '#a21caf',
-                    800: '#86198f',
-                    900: '#701a75',
                 }
             },
             backgroundImage: {
