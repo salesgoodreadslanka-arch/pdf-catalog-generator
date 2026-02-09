@@ -237,7 +237,14 @@ pip install google-auth google-api-python-client
 
 ## 📦 Production Deployment
 
-### Backend (FastAPI)
+### 🚀 Recommended: Railway & Vercel (Fastest)
+See our detailed [Railway & Vercel Deployment Guide](RAILWAY_VERCEL_DEPLOY.md) to get live in minutes.
+
+### alternative: Render & Vercel
+See the [Original Deployment Guide](DEPLOYMENT_GUIDE.md) for Render instructions.
+
+### Manual/Docker
+**Backend (FastAPI)**
 ```bash
 # Install production server
 pip install gunicorn
@@ -246,7 +253,7 @@ pip install gunicorn
 gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
 ```
 
-### Frontend (Next.js)
+**Frontend (Next.js)**
 ```bash
 # Build for production
 npm run build

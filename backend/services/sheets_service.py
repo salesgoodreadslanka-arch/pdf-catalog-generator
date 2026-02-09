@@ -1,4 +1,5 @@
 import os
+import json
 from typing import List, Dict, Any, Set
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -20,15 +21,29 @@ class SheetsService:
     def _initialize_service(self):
         """Initialize Google Sheets API service"""
         try:
-            if not os.path.exists(self.credentials_path):
-                print(f"Warning: {self.credentials_path} not found. Running in MOCK MODE.")
+            # Check if credentials are provided in an environment variable as a JSON string
+            creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
+            
+            if creds_json:
+                # Load credentials from JSON string
+                creds_info = json.loads(creds_json)
+                credentials = service_account.Credentials.from_service_account_info(
+                    creds_info,
+                    scopes=['https://www.googleapis.com/auth/spreadsheets.readonly']
+                )
+                print("Using credentials from GOOGLE_CREDENTIALS_JSON environment variable.")
+            elif os.path.exists(self.credentials_path):
+                # Fallback to local file
+                credentials = service_account.Credentials.from_service_account_file(
+                    self.credentials_path,
+                    scopes=['https://www.googleapis.com/auth/spreadsheets.readonly']
+                )
+                print(f"Using credentials from {self.credentials_path}.")
+            else:
+                print(f"Warning: No credentials found (variable or file). Running in MOCK MODE.")
                 self.mock_mode = True
                 return
 
-            credentials = service_account.Credentials.from_service_account_file(
-                self.credentials_path,
-                scopes=['https://www.googleapis.com/auth/spreadsheets.readonly']
-            )
             self.service = build('sheets', 'v4', credentials=credentials)
             self.mock_mode = False
         except Exception as e:
