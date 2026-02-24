@@ -1,12 +1,14 @@
 services:
   backend:
-    build: ./backend 
+    build: ./backend
     ports:
       - "8000:8000"
-    env_file:
-      - ./backend/.env
+    environment:
+      - SPREADSHEET_ID=${SPREADSHEET_ID}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - GOOGLE_CREDENTIALS_JSON=${GOOGLE_CREDENTIALS_JSON}
+      - PORT=8000
     volumes:
-      - ./backend/credentials.json:/app/credentials.json
       - ./backend/output:/app/output
     restart: always
 

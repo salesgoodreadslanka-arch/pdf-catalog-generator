@@ -1,81 +1,141 @@
-# Docker Deployment Guide for VPS
+# 🐳 Docker Deployment Guide — VPS
 
-This guide will help you deploy your PDF Catalog Generator to your VPS (Virtual Private Server) using Docker. Docker makes it easy to run the same application on any computer or server.
-
-## Prerequisites
-1.  **A VPS**: (e.g., DigitalOcean, Hetzner, AWS, Linode).
-2.  **SSH Access**: You should be able to log in to your VPS using a terminal.
-3.  **Project Files**: Upload your project to GitHub (see the previous guide) or use `scp` to upload files directly.
+Deploy your PDF Catalog Generator to any VPS using Docker Compose.
 
 ---
 
-## Step 1: Install Docker on your VPS
-Most VPS providers use Ubuntu. Run these commands one by one to install Docker:
+## Prerequisites
+- A VPS running Ubuntu (e.g., Hetzner, DigitalOcean, AWS Lightsail)
+- SSH access to the VPS
+- Your code pushed to GitHub
+
+---
+
+## Step 1: Install Docker on VPS
 
 ```bash
-# Update package list
 sudo apt-get update
-
-# Install Docker
 sudo apt-get install -y docker.io docker-compose
-
-# Start and enable Docker
 sudo systemctl start docker
 sudo systemctl enable docker
 ```
 
 ---
 
-## Step 2: Prepare the Files
-Clone your repository on the VPS:
+## Step 2: Clone Your Repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/pdf-catalog-generator.git
+git clone https://github.com/salesgoodreadslanka-arch/pdf-catalog-generator.git
 cd pdf-catalog-generator
 ```
 
-### Important: Add your credentials
-Since `credentials.json` and `.env` are ignored by Git, you must create them manually on the server:
+---
 
-1.  **Backend Credentials**:
-    ```bash
-    nano backend/credentials.json
-    ```
-    (Paste your Google API JSON content, then press `Ctrl+O`, `Enter`, `Ctrl+X` to save).
+## Step 3: Create the `.env` File
 
-2.  **Backend Environment**:
-    ```bash
-    nano backend/.env
-    ```
-    (Add your `SPREADSHEET_ID` and other settings).
+Create a `.env` file in the project root (next to `docker-compose.yml`):
+
+```bash
+nano .env
+```
+
+Paste the following (fill in your values):
+
+```env
+# Google Sheets
+SPREADSHEET_ID=your_spreadsheet_id_here
+
+# Google Credentials — paste the ENTIRE contents of credentials.json as one line
+GOOGLE_CREDENTIALS_JSON={"type":"service_account","project_id":"...","private_key":"..."}
+
+# CORS — set to your domain once you have one, or * to allow all
+FRONTEND_URL=*
+
+# Frontend API URL — use your VPS IP or domain
+NEXT_PUBLIC_API_URL=http://YOUR_VPS_IP:8000
+```
+
+> ⚠️ **Note**: The `GOOGLE_CREDENTIALS_JSON` value must be the **entire JSON content** of your `credentials.json` file on a **single line** (no line breaks).
+
+Press `Ctrl+O`, `Enter`, `Ctrl+X` to save.
 
 ---
 
-## Step 3: Launch with Docker Compose
-From the root folder (`pdf-catalog-generator`), run:
+## Step 4: Launch with Docker Compose
 
 ```bash
-# Build and start the containers in the background
 sudo docker-compose up --build -d
 ```
 
-### Checking if it's running:
-- **Backend**: Open `http://YOUR_VPS_IP:8000/` in your browser. You should see `{"status":"ok"}`.
-- **Frontend**: Open `http://YOUR_VPS_IP:3000/` in your browser.
+### Verify it's running:
+- **Backend**: `http://YOUR_VPS_IP:8000/` → should return `{"status":"ok"}`
+- **Frontend**: `http://YOUR_VPS_IP:3000/` → should show the UI with data
 
 ---
 
-## Step 4: Making it Accessible (Public URL)
-If you want to use a real domain name (like `catalog.yourdomain.com`), you should look into a "Reverse Proxy" like **Nginx Proxy Manager** or **Caddy**.
+## Step 5: (Optional) Use a Domain Name
 
-### Quick Port Update:
-If you need to change the public port, edit `docker-compose.yml`:
-- Change `"3000:3000"` to `"80:3000"` to make the frontend accessible on the standard web port (port 80).
+If you have a domain (e.g., `catalog.goodreads.lk`), use **Nginx** as a reverse proxy:
+
+```bash
+sudo apt-get install -y nginx
+```
+
+Create config at `/etc/nginx/sites-available/catalog`:
+
+```nginx
+server {
+    listen 80;
+    server_name catalog.yourdomain.com;
+
+    # Frontend
+    location / {
+        proxy_pass http://localhost:3000;
+    }
+
+    # Backend API
+    location /api/ {
+        proxy_pass http://localhost:8000;
+    }
+}
+```
+
+Enable it:
+```bash
+sudo ln -s /etc/nginx/sites-available/catalog /etc/nginx/sites-enabled/
+sudo systemctl restart nginx
+```
+
+Then update your `.env`:
+```env
+FRONTEND_URL=https://catalog.yourdomain.com
+NEXT_PUBLIC_API_URL=https://catalog.yourdomain.com
+```
+
+And redeploy: `sudo docker-compose up --build -d`
 
 ---
 
-## Useful Docker Commands
-- **Stop everything**: `sudo docker-compose down`
-- **View logs**: `sudo docker-compose logs -f`
-- **Restart one service**: `sudo docker-compose restart backend`
-- **List running containers**: `sudo docker ps`
+## Useful Commands
+
+| Command | Description |
+|---------|-------------|
+| `sudo docker-compose up -d` | Start all containers |
+| `sudo docker-compose down` | Stop all containers |
+| `sudo docker-compose logs -f` | View live logs |
+| `sudo docker-compose restart backend` | Restart backend only |
+| `sudo docker-compose pull && sudo docker-compose up --build -d` | Update after git pull |
+| `sudo docker ps` | List running containers |
+
+---
+
+## Updating the App
+
+When you make code changes:
+
+```bash
+git pull
+sudo docker-compose up --build -d
+```
+
+That's it! 🚀
